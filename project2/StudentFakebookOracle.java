@@ -575,12 +575,12 @@ public final class StudentFakebookOracle extends FakebookOracle {
                 UserInfo young = new UserInfo(80000000, "Neil", "deGrasse Tyson");
                 return new AgeInfo(old, young);
             */
-            ResultSet rst = stmt.executeQuery(
+            stmt.executeUpdate(
+                "CREATE VIEW Friend_age AS "+
                 "SELECT u.user_id, u.first_name, u.last_name " +
                 "FROM " + UsersTable + " u " +
                 "JOIN " + FriendsTable + " F ON (u.user_id = F.user1_id OR u.user_id = F.user2_id) " +
-                "WHERE (F.user1_id = " + userID + " OR F.user2_id = " + userID + ") " +
-                "ORDER BY u.year_of_birth, u.month_of_birth, u.day_of_birth, u.user_id DESC"
+                "WHERE (F.user1_id = " + userID + " OR F.user2_id = " + userID + ") " 
             );
 
             long youngest_friendID = -1;
@@ -588,21 +588,32 @@ public final class StudentFakebookOracle extends FakebookOracle {
             String youngest_lastName = "ERROR";
             long oldest_friendID = -1;
             String oldest_firstName = "ERROR";
-            String oldest_lastName = "ERROR";            
-            while(rst.next()){
-                if(rst.isLast()){
-                    youngest_friendID = rst.getLong(1);
-                    youngest_firstName = rst.getString(2);
-                    youngest_lastName = rst.getString(3);
-                }
+            String oldest_lastName = "ERROR"; 
+
+            ResultSet rst = stmt.executeQuery(
+                "SELECT u.user_id, u.first_name, u.last_name "+
+                "FROM Friend_age "+
+                "ORDER BY u.year_of_birth, u.month_of_birth, u.day_of_birth, u.user_id DESC");         
+            if(rst.next()){
                 if(rst.isFirst()){
                     oldest_friendID = rst.getLong(1);
                     oldest_firstName = rst.getString(2);
                     oldest_lastName = rst.getString(3);
-                }
-                
+                }    
             }
-
+            rst = stmt.executeQuery(
+                "SELECT u.user_id, u.first_name, u.last_name "+
+                "FROM Friend_age "+
+                "ORDER BY u.year_of_birth DESC, u.month_of_birth DESC, u.day_of_birth DESC, u.user_id DESC");   
+            if(rst.next()){
+                if(rst.isFirst()){
+                    youngest_friendID = rst.getLong(1);
+                    youngest_firstName = rst.getString(2);
+                    youngest_lastName = rst.getString(3);
+                }    
+            }
+            stmt.executeUpdate("DROP VIEW Friend_age");
+            stmt.close();
             return new AgeInfo(new UserInfo(oldest_friendID,oldest_firstName,oldest_lastName),new UserInfo(youngest_friendID,youngest_firstName,youngest_lastName)); 
 
         } catch (SQLException e) {
